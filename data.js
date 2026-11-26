@@ -33,7 +33,7 @@ window.TRX = (() => {
       callback: true, cbOff: [0, 7, 55], follow: -3, visit: [-6, 8, 10], tires: ['yellow', 'yellow', 'red', 'red'], align: true,
       ts: 'open', as: 'open', tq: 'created', aq: null, tsale: 'red', asale: 'red',
       sms: ['available', 3], email: ['available', 1], call: ['available', 2], notes: 4, advisor: 'Alex Morgan', owner: ME, visitId: 846902 },
-    { id: 2, name: 'Daniel Ruiz', vehicle: '2019 Ford Escape', trim: 'SEL', plate: 'TX RKV-3184', vin: '1FMCU9GD5KUA48217', odo: 72418, phone: '(469) 555-0142', address: '2217 Spring Creek Drive, Plano, TX 75023',
+    { id: 2, name: 'Daniel Ruiz', vehicle: '2019 Ford Escape', trim: 'SEL', plate: 'TX RKV-3184', vin: '1FMCU9GD5KUA48217', odo: 72418, phone: '(469) 555-0142', altPhone: '(469) 555-0199', altEmail: 'd.ruiz@oldmail.example', address: '2217 Spring Creek Drive, Plano, TX 75023',
       callback: true, cbOff: [0, 8, 42], follow: 0, visit: [-2, 9, 18], tires: ['yellow', 'yellow', 'red', 'red'], align: true,
       ts: 'open', as: 'open', tq: 'created', aq: 'created', tsale: null, asale: null,
       sms: ['available', 3], email: ['available', 1], call: ['available', 2], notes: 4, advisor: 'Jamie Lee', owner: ME, visitId: 847291, rich: true },
@@ -52,8 +52,8 @@ window.TRX = (() => {
     { id: 6, name: 'Nora Bennett', vehicle: '2023 Kia Telluride', trim: 'SX', plate: 'MI EPK 6112', vin: '5XYP5DGC7PG355019', odo: 18306, phone: '', address: '3409 Maple Rd, Ann Arbor, MI 48104',
       callback: false, follow: 8, visit: [-4, 13, 35], tires: ['green', 'green', 'green', 'green'], align: true,
       ts: null, as: 'open', tq: null, aq: 'shared', tsale: null, asale: 'green',
-      sms: ['available', 0], email: ['available', 4], call: ['unavailable', 0], notes: 7, advisor: 'Taylor Kim', owner: ME, visitId: 847090 },
-    { id: 7, name: '', vehicle: '2017 Nissan Altima', trim: '2.5 SV', plate: 'MO XF4 P2N', vin: '1N4AL3AP7HC219844', odo: 102377, phone: '(314) 555-0102', address: '',
+      sms: ['unavailable', 0], email: ['available', 4], call: ['unavailable', 0], notes: 7, advisor: 'Taylor Kim', owner: ME, visitId: 847090 },
+    { id: 7, name: '', vehicle: '2017 Nissan Altima', trim: '2.5 SV', plate: 'MO XF4 P2N', vin: '1N4AL3AP7HC219844', odo: 102377, phone: '(314) 555-0102', emailAddr: 'mo.driver4821@example.com', address: '',
       callback: false, follow: -1, visit: [-12, 14, 10], tires: ['red', 'red', 'green', 'green'], align: false,
       ts: 'open', as: null, tq: null, aq: null, tsale: 'red', asale: null,
       sms: ['blocked', 2], email: ['blocked', 1], call: ['blocked', 4], notes: 5, advisor: '', owner: '', visitId: 845530 },
@@ -131,19 +131,30 @@ window.TRX = (() => {
       { author: 'Jamie Lee', at: at(-2, 9, 24), text: 'Vehicle is in for scheduled maintenance. Review Recommendations with Vehicle Owner.' },
       { author: 'TraXtion System', at: at(-2, 9, 23), text: `Follow-Up created from Visit ${o.visitId}.` }
     ];
+    const link = `https://traxtion.tireprofiles.com/r/${o.visitId}`, stop = 'Reply STOP to stop';
+    const mob = '+1 (469) 555-0142', mob2 = '+1 (469) 555-0199';
+    // Every SMS and Email in history includes the protected link and the required opt-out / footer.
     o.comms = [
-      { type: 'sms', at: at(-1, 15, 31), from: 'TraXtion', to: 'Daniel', text: 'Your Tire and Alignment results are ready.', result: 'Delivered', auto: true, current: true },
-      { type: 'phone', at: at(-2, 14, 10), from: 'Jamie Lee', to: 'Daniel', text: 'Outbound call', result: 'No answer', current: true },
-      { type: 'email', at: at(-2, 9, 25), from: 'TraXtion', to: 'Daniel', subject: 'Vehicle Scan results and Recommendations', text: 'Visit results and Recommendations', result: 'Opened', auto: true, current: true },
-      { type: 'sms', at: at(-2, 9, 19), from: 'TraXtion', to: 'Daniel', text: 'Thanks for visiting! Your vehicle is checked in.', result: 'Delivered', auto: true, current: true },
-      { type: 'sms', at: new Date(2026, 2, 14, 15, 2), from: 'Jamie Lee', to: 'Daniel', text: 'Your Escape is ready for pickup.', result: 'Delivered', current: false }
+      { type: 'phone', at: at(-1, 16, 30), addr: mob, by: ME, outcome: 'Voicemail', note: 'Left a voicemail with the Quote totals.', current: true },
+      { type: 'sms', at: at(-1, 15, 31), addr: mob, by: 'TraXtion System', text: `Your Tire and Alignment results from ${DEALER} are ready. Please review your results and contact us with any questions. ${link} ${stop}`, current: true },
+      { type: 'sms', at: at(-2, 15, 5), addr: mob, by: 'Jamie Lee', text: `Hi Daniel, we are preparing Quotes for the recommended Tire and Alignment work and will send them shortly. ${link} ${stop}`, current: true },
+      { type: 'phone', at: at(-2, 14, 10), addr: mob, by: 'Jamie Lee', outcome: 'No Answer', note: 'No answer after six rings.', current: true },
+      { type: 'email', at: at(-2, 9, 25), addr: 'daniel.ruiz@example.com', by: 'TraXtion System', subject: 'Vehicle Scan results and Recommendations', text: `Your recent Visit results are ready. Review the Tire and Alignment Recommendations prepared for your Vehicle. View Vehicle Recommendations and Quotes. ${DEALER} · 1234 Service Drive · Plano, TX 75023 · Unsubscribe from these messages`, current: true },
+      { type: 'sms', at: at(-2, 9, 19), addr: mob, by: 'TraXtion System', text: `Thanks for visiting ${DEALER}. Your vehicle is checked in for service. ${link} ${stop}`, current: true },
+      { type: 'phone', at: new Date(2026, 2, 14, 11, 2), addr: mob2, by: 'Alex Morgan', outcome: 'Voicemail', note: 'Left a message about the prior Visit.', current: false },
+      { type: 'sms', at: new Date(2026, 2, 14, 10, 55), addr: mob, by: 'Jamie Lee', text: `Thank you for visiting ${DEALER}. Your vehicle health report is ready. https://traxtion.tireprofiles.com/r/794218 ${stop}`, current: false },
+      { type: 'email', at: new Date(2026, 2, 14, 10, 55), addr: 'daniel.ruiz@example.com', by: 'Jamie Lee', subject: 'Your Vehicle health report', text: `Thank you for visiting ${DEALER}. Your Vehicle health report is ready.`, current: false },
+      { type: 'sms', at: new Date(2025, 9, 6, 8, 21), addr: mob2, by: 'TraXtion System', text: `Your vehicle Scan results are available. https://traxtion.tireprofiles.com/r/741602 ${stop}`, current: false },
+      { type: 'email', at: new Date(2025, 9, 6, 8, 21), addr: 'd.ruiz@oldmail.example', by: 'TraXtion System', subject: 'Your Scan results are available', text: 'Your Vehicle Scan results are available for review.', current: false }
     ];
     o.timeline = [
       { type: 'callback', title: 'Call-Back Request received', text: 'Vehicle Owner requested a call about both Recommendations.', at: o.callbackAt, actor: 'Vehicle Owner', scope: 'Follow-Up' },
       { type: 'quote', title: 'Alignment Quote created', text: '$129.95 Alignment service Quote created.', at: at(-1, 16, 16), actor: ME, scope: 'Alignment', link: ['align-quote', 'View Quote'] },
       green ? null : { type: 'quote', title: 'Tire Quote created', text: 'Four-tire replacement Quote totaling $1,186.76.', at: at(-1, 16, 10), actor: ME, scope: 'Tire', link: ['tire-quote', 'View Quote'] },
       { type: 'note', title: 'Follow-Up Note added', text: o.notesList[0].text, at: at(-1, 15, 48), actor: 'Jamie Lee', scope: 'Follow-Up', link: ['notes', 'View Notes'] },
+      { type: 'phone', title: 'Outbound call — voicemail', text: 'Left a voicemail with the Quote totals.', at: at(-1, 16, 30), actor: ME, scope: 'Follow-Up', link: ['comms', 'View Communication'] },
       { type: 'sms', title: 'SMS delivered', text: 'Vehicle Owner received a link to the Visit results.', at: at(-1, 15, 31), actor: 'TraXtion System', scope: 'Follow-Up', link: ['comms', 'View Communication'] },
+      { type: 'sms', title: 'SMS sent', text: 'Told the Vehicle Owner that Quotes are being prepared.', at: at(-2, 15, 5), actor: 'Jamie Lee', scope: 'Follow-Up', link: ['comms', 'View Communication'] },
       { type: 'phone', title: 'Outbound call — no answer', text: 'Jamie Lee attempted to contact the Vehicle Owner.', at: at(-2, 14, 10), actor: 'Jamie Lee', scope: 'Follow-Up', link: ['comms', 'View Communication'] },
       { type: 'email', title: 'Results Email opened', text: 'Vehicle Owner opened the Visit results and Recommendations.', at: at(-2, 9, 41), actor: 'Vehicle Owner', scope: 'Follow-Up', link: ['comms', 'View Communication'] },
       { type: 'claim', title: 'Opportunity claimed', text: `${ME} claimed ownership of this Follow-Up.`, at: at(-2, 9, 28), actor: ME, scope: 'Follow-Up' },
@@ -163,11 +174,17 @@ window.TRX = (() => {
       at: new Date(v.getTime() + (count - i) * 0.6 * DAY),
       text: NOTE_POOL[(o.id + i) % NOTE_POOL.length]
     }));
+    const link = `https://traxtion.tireprofiles.com/r/${o.visitId}`, stop = 'Reply STOP to stop';
+    const footer = `${DEALER} · 1234 Service Drive · Plano, TX 75023 · Unsubscribe from these messages`;
+    const mob = o.phone ? `+1 ${o.phone}` : '+1 (555) 555-0100';
+    const user = o.owner || o.advisor || 'Jamie Lee';
     o.comms = [];
-    const add = (type, k, data) => { for (let i = 0; i < Math.min(o.comm[k].count, 2); i++) o.comms.push({ type, at: new Date(v.getTime() + (i + 1) * 0.37 * DAY), from: i ? 'TraXtion' : (o.owner || o.advisor || 'Jamie Lee'), to: n, ...data(i) }); };
-    add('sms', 'sms', (i) => ({ text: i ? 'Your Visit results are ready.' : 'Following up on your Tire Quote — any questions?', result: 'Delivered', auto: !!i, current: true }));
-    add('email', 'email', (i) => ({ subject: i ? 'Vehicle Scan results and Recommendations' : 'Your Quote from TraXtion Sales Demo', text: 'Visit results and Recommendations', result: i ? 'Opened' : 'Delivered', auto: !!i, current: true }));
-    add('phone', 'call', (i) => ({ text: 'Outbound call', result: i ? 'Left voicemail' : 'No answer', current: true }));
+    const add = (type, k, make) => { for (let i = 0; i < Math.min(o.comm[k].count, 4); i++) o.comms.push({ type, at: new Date(v.getTime() + (i + 1) * 0.37 * DAY), by: i % 2 ? 'TraXtion System' : user, current: true, ...make(i) }); };
+    add('sms', 'sms', (i) => ({ addr: mob, text: i % 2 ? `Your Visit results from ${DEALER} are ready. ${link} ${stop}` : `Hi ${n}, following up on your Recommendations — any questions? ${link} ${stop}` }));
+    add('email', 'email', (i) => ({ addr: o.email, subject: i % 2 ? 'Vehicle Scan results and Recommendations' : `Your Vehicle Recommendations from ${DEALER}`, text: `Your Visit results and Recommendations are ready to review. View Vehicle Recommendations and Quotes. ${footer}` }));
+    add('phone', 'call', (i) => ({ by: i % 2 ? (o.advisor || 'Jamie Lee') : user, addr: mob, outcome: ['No Answer', 'Voicemail', 'Busy', 'Request Callback Later'][i], note: ['No answer.', 'Left a voicemail about the Recommendations.', '', 'Asked us to call back after 5 PM.'][i] }));
+    // One older message from a prior Visit, unrelated to this Opportunity
+    if (o.phone && o.comm.sms.state !== 'unavailable') o.comms.push({ type: 'sms', at: new Date(v.getTime() - 160 * DAY), addr: mob, by: 'TraXtion System', text: `Thank you for visiting ${DEALER}. Your vehicle health report is ready. ${stop}`, current: false });
     o.comms.sort((a, b) => b.at - a.at);
     o.timeline = [];
     if (o.callback) o.timeline.push({ type: 'callback', title: 'Call-Back Request received', text: 'Vehicle Owner asked to be contacted.', at: o.callbackAt, actor: 'Vehicle Owner', scope: 'Follow-Up' });
@@ -177,7 +194,7 @@ window.TRX = (() => {
     if (o.alignQuote) o.timeline.push({ type: 'quote', title: 'Alignment Quote created', text: '$129.95 Alignment service Quote created.', at: new Date(dayAfter.getTime() - 600e3), actor: o.owner || ME, scope: 'Alignment', link: ['align-quote', 'View Quote'] });
     if (o.tireSale || o.alignSale) o.timeline.push({ type: 'ro', title: 'Repair Order received from DMS', text: `RO ${o.visitId + 436000} matched to this Visit.`, at: new Date(v.getTime() + 0.3 * DAY), actor: 'DMS feed', scope: 'Follow-Up', link: ['current-ro', 'View RO'] });
     o.notesList.forEach((nt) => o.timeline.push({ type: 'note', title: 'Follow-Up Note added', text: nt.text, at: nt.at, actor: nt.author, scope: 'Follow-Up', link: ['notes', 'View Notes'] }));
-    o.comms.filter((c) => c.current).forEach((c) => o.timeline.push({ type: c.type, title: c.type === 'phone' ? `Outbound call — ${c.result.toLowerCase()}` : `${c.type === 'sms' ? 'SMS' : 'Email'} ${c.result.toLowerCase()}`, text: c.subject || c.text, at: c.at, actor: c.auto ? 'TraXtion System' : c.from, scope: 'Follow-Up', link: ['comms', 'View Communication'] }));
+    o.comms.filter((c) => c.current).forEach((c) => o.timeline.push({ type: c.type, title: c.type === 'phone' ? `Outbound call — ${c.outcome.toLowerCase()}` : `${c.type === 'sms' ? 'SMS' : 'Email'} sent`, text: c.type === 'phone' ? c.note : (c.subject || c.text.replace(/ https:\S+.*$/, '')), at: c.at, actor: c.by, scope: 'Follow-Up', link: ['comms', 'View Communication'] }));
     if (o.owner) o.timeline.push({ type: 'claim', title: 'Opportunity claimed', text: `${o.owner} claimed ownership of this Follow-Up.`, at: new Date(v.getTime() + 600e3), actor: o.owner, scope: 'Follow-Up' });
     if (o.closed) o.timeline.push({ type: 'status', title: 'Follow-Up closed', text: 'Shared Follow-Up work item marked Closed.', at: at(-2, 10, 5), actor: o.owner || ME, scope: 'Follow-Up' });
     o.timeline.push({ type: 'scan', title: 'Visit and Recommendations created', text: 'Tread Depth and WheelSpec Scans were related to this Visit.', at: v, actor: 'TraXtion System', scope: 'Follow-Up', link: ['visit', 'View Visit'] });
@@ -189,7 +206,7 @@ window.TRX = (() => {
       const green = r.id === 2 && scenario === 'green';
       const o = {
         id: r.id, name: r.name, vehicle: r.vehicle, trim: r.trim, plate: r.plate, vin: r.vin, odo: r.odo,
-        phone: r.phone, email: r.noEmail || !r.name ? '' : `${slug(r.name)}@example.com`, address: r.address,
+        phone: r.phone, email: r.emailAddr || (r.noEmail || !r.name ? '' : `${slug(r.name)}@example.com`), altPhone: r.altPhone || '', altEmail: r.altEmail || '', address: r.address,
         callback: r.callback, callbackAt: r.cbOff ? at(...r.cbOff) : null,
         follow: at(r.follow), visitAt: at(...r.visit), visitId: r.visitId,
         tires: green ? ['green', 'green', 'green', 'green'] : r.tires.slice(), align: r.align,

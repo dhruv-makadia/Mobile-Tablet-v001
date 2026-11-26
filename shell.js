@@ -93,7 +93,7 @@
         <li>Tap the <b>Call-backs</b> or <b>Overdue</b> quick view under the search bar.</li>
         <li>Tap the red <b>Call-back requested</b> strip on a card. Opportunity Detail opens at the request.</li>
         <li>Tap a <b>Follow-Up date</b> chip to change the date. A Reason is required.</li>
-        <li>Tap a blue communication icon to send an SMS or log a call. Gray and red icons explain why they can't be used.</li>
+        <li>Tap a communication icon, then open its <b>History</b> tab. Gray and red icons open the same sheet and explain why the method can't be used.</li>
         <li>Tap the round <b>filter button</b> (bottom left, as on the Scan List) for every web filter.</li>
         <li>Open <b>⋮</b> on a card to close a Follow-Up. A confirmation is shown first.</li>
       </ul>
@@ -113,6 +113,16 @@
         <tr><td>Opportunity Owner</td><td>Mine / Unclaimed / name chip</td></tr>
         <tr><td>Closed</td><td>⋮ menu with confirmation. Closed cards are dimmed</td></tr>
       </tbody></table>
+
+      <h3>Where communication history is shown</h3>
+      <ul><li><b>Send SMS, Send Email, and Make Call</b> each have two tabs: <b>Compose</b> (or Make Call) and <b>History</b>. History lists every SMS, Email, or call for the Vehicle Owner, newest first. Each entry shows the date, who it went to, who sent it, and whether it belongs to the <b>Current Opportunity</b> or another one.</li>
+        <li><b>Opportunity Detail → Communication Log</b> shows the full history with All / SMS / Email / Phone filters.</li>
+        <li>The <b>⋮</b> menu on a list card has a <b>Communication History</b> shortcut.</li></ul>
+      <h3>SMS and Email content</h3>
+      <ul><li>TraXtion prepares one message. There is no message-type choice; the user edits the greeting and main text.</li>
+        <li>The <b>Vehicle Owner report link</b> opens the Vehicle Owner's report (results, Recommendations, and Quotes). It is locked, always sent, and counts toward the SMS length.</li>
+        <li>The SMS opt-out text and the Email dealership footer are also locked and always sent.</li>
+        <li>Sending marks any Quote in the report as Shared.</li></ul>
       <h3>Phone</h3>
       <ul><li>One column of cards. Search and quick views stay pinned while you scroll.</li><li>Filters and Sort open as bottom sheets, like the existing Scan List filter.</li></ul>
       <h3>Tablet</h3>
@@ -131,10 +141,21 @@
       <ul class="try">
         <li>Tap <b>Mark Addressed</b> on the Call-Back request.</li>
         <li>Tap a step in the Tire or Alignment card, such as <b>Recommendation</b>. The Tread Depth Scan opens.</li>
-        <li>Tap <b>Share Quote</b>, then SMS. The Quote changes to <b>Shared</b> on the card, in the timeline, and in the list.</li>
+        <li>Tap <b>Share Quote</b>, then SMS. The message carries the locked report link; after sending, the Quote shows <b>Shared</b> on the card, in the timeline, and in the list.</li>
+        <li>Open <b>Communication</b> in the jump bar and filter the history by SMS, Email, or Phone.</li>
         <li>Tap <b>Call</b> in the action bar and record the outcome. The Phone count updates everywhere.</li>
         <li>Switch <b>Scenario</b> to <b>All-green Tires</b> in the toolbar.</li>
       </ul>
+
+      <h3>Where communication history is shown</h3>
+      <ul><li><b>Send SMS, Send Email, and Make Call</b> each have two tabs: <b>Compose</b> (or Make Call) and <b>History</b>. History lists every SMS, Email, or call for the Vehicle Owner, newest first. Each entry shows the date, who it went to, who sent it, and whether it belongs to the <b>Current Opportunity</b> or another one.</li>
+        <li><b>Opportunity Detail → Communication Log</b> shows the full history with All / SMS / Email / Phone filters.</li>
+        <li>The <b>⋮</b> menu on a list card has a <b>Communication History</b> shortcut.</li></ul>
+      <h3>SMS and Email content</h3>
+      <ul><li>TraXtion prepares one message. There is no message-type choice; the user edits the greeting and main text.</li>
+        <li>The <b>Vehicle Owner report link</b> opens the Vehicle Owner's report (results, Recommendations, and Quotes). It is locked, always sent, and counts toward the SMS length.</li>
+        <li>The SMS opt-out text and the Email dealership footer are also locked and always sent.</li>
+        <li>Sending marks any Quote in the report as Shared.</li></ul>
       <h3>Page order (same as web v007)</h3>
       <ul><li>Vehicle Owner context (sticky) → Call-Back Request → Tire and Alignment Opportunities → Actions → Current Visit → Alignment Quotes → Tire Quotes → Follow-Up Summary → Follow-Up Notes → Prior Visits → Prior Repair Orders → Activity Timeline → Communication Log</li></ul>
       <h3>Mobile adaptations</h3>
@@ -144,7 +165,7 @@
         <li><b>Primary actions</b> (Call, SMS, Email, Note, Follow-Up Date) sit in a bottom bar on phones, within thumb reach. Tablets show the full-width Actions card plus quick icons in the sticky header.</li>
         <li><b>Tread Depth</b> is drawn natively as a 2 × 2 grid. Groove depth is to scale, so worn Tires have visibly shallow grooves.</li>
         <li><b>Repair Order lines</b> are stacked rows. Lines that show a Sale are highlighted green.</li>
-        <li><b>Popups</b> (SMS, Email, Call, Notes, Share) open as bottom sheets on phones and centered dialogs on tablets.</li>
+        <li><b>Popups</b> (SMS, Email, Call, Notes, Share) open as bottom sheets on phones and centered dialogs on tablets. Their content follows the web popups: contact review, one prepared message, locked report link, Block / Do Not Call, Next Follow-Up, and History.</li>
       </ul>
       <h3>Rules kept from the web requirements</h3>
       <ul><li>Tire, Alignment, and the overall Follow-Up open and close independently.</li>

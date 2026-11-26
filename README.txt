@@ -46,9 +46,12 @@ GOOD TO KNOW
     Nothing connects to a TraXtion server.
   - Changes you make (SMS sent, Notes added, dates changed, Follow-Ups closed)
     last until you reload the page or press Reset.
-  - Send SMS, Send Email, Make Call, Follow-Up Notes, and Share Quote are
-    simplified versions of the web popups, included so the whole flow can be
-    tried. Their full design is still a separate piece of work.
+  - Send SMS, Send Email, and Make Call follow the web popups: Vehicle Owner
+    contact review, one system-prepared message, a locked Vehicle Owner report
+    link (plus the required SMS opt-out or Email footer) that is always sent,
+    Block / Do Not Call, Next Follow-Up, and a History tab.
+  - Communication history appears in each popup's History tab and in
+    Opportunity Detail > Communication Log (filter by SMS, Email, or Phone).
   - The IBM Plex Sans fonts and the logo come from the TraXtion mobile app.
 
 FILES

@@ -14,7 +14,7 @@
   if (inFrame) document.body.classList.add('in-frame');
 
   /* ------------------------------------------------------------ state */
-  const freshUi = () => ({ collapsed: new Set(), open: new Set(), allTimeline: false, ro: [], roAnd: false, compact: false });
+  const freshUi = () => ({ collapsed: new Set(), open: new Set(), allTimeline: false, ro: [], roAnd: false, compact: false, commF: 'all' });
   const S = {
     scenario: qs.get('scenario') === 'green' ? 'green' : 'red',
     opps: [], quick: 'all', search: '', sort: 'follow',
@@ -360,14 +360,19 @@
     return sec('timeline', 'Activity Timeline', body, { sub: 'Newest first' });
   }
   function commsSec(o) {
+    const f = S.ui.commF || 'all';
+    const n = (t) => o.comms.filter((c) => t === 'all' || c.type === t).length;
     const contact = `<div class="contact-grid">
       <div class="contact-line"><span class="sr-ic">${ic('person')}</span><div><span>Name</span><strong>${esc(o.name || 'Vehicle Owner unavailable')}</strong></div></div>
       <div class="contact-line"><span class="sr-ic">${ic('call')}</span><div><span>Phone Number</span><strong>${esc(o.phone || '—')}</strong>${avail('Call', o.comm.call.state)}${avail('SMS', o.comm.sms.state)}</div></div>
       <div class="contact-line"><span class="sr-ic">${ic('email')}</span><div><span>Email Address</span><strong>${esc(o.email || '—')}</strong>${avail('Email', o.comm.email.state)}</div></div>
       <div class="contact-line"><span class="sr-ic">${ic('pin')}</span><div><span>Address</span><strong>${esc(o.address || '—')}</strong></div></div></div>
       <button class="btn btn-outline btn-sm tap" style="margin-top:12px" data-act="edit-owner">${ic('edit')}Edit Vehicle Owner</button>`;
-    const hist = o.comms.length ? o.comms.map((c) => `<div class="h-item"><span class="type-pill ${c.type}">${c.type === 'phone' ? 'Phone' : c.type === 'sms' ? 'SMS' : 'Email'}</span><div><b>${esc(c.subject || c.text)}</b><small>${monY(c.at)}, ${time(c.at)} · ${esc(c.from)} → ${esc(c.to)}${c.auto ? ' · Automated' : ''}${c.current ? '' : '<span class="other-opp">Other Opportunity</span>'}</small></div><span class="h-res">${esc(c.result)}</span></div>`).join('') : '<div class="empty-inline">No communications recorded yet.</div>';
-    return sec('comms', 'Communication Log', contact + `<div class="history"><div class="prev-title" style="margin-top:4px">History</div>${hist}</div>`);
+    const chips = `<div class="chips hscroll comm-filter">${[['all', 'All'], ['sms', 'SMS'], ['email', 'Email'], ['phone', 'Phone']].map(([k, l]) => `<button class="chip tap ${f === k ? 'active' : ''}" data-act="comm-filter" data-k="${k}">${l}<span class="n">${n(k)}</span></button>`).join('')}</div>`;
+    const list = o.comms.filter((c) => f === 'all' || c.type === f);
+    const open = f === 'all' ? '' : `<button class="btn btn-outline btn-sm tap" style="margin-top:10px" data-act="${f === 'phone' ? 'call' : f}" data-id="${o.id}" data-tab="history">${ic('history')}Open ${f === 'phone' ? 'Phone' : f === 'sms' ? 'SMS' : 'Email'} History</button>`;
+    const hist = (list.length ? list.map(histItem).join('') : '<div class="empty-inline">No communications of this type yet.</div>') + open;
+    return sec('comms', 'Communication Log', contact + `<div class="history"><div class="prev-title">Communication History</div><p class="field-hint" style="margin:-4px 0 8px">Every SMS, Email, and call with this Vehicle Owner, newest first, including other Opportunities.</p>${chips}${hist}</div>`, { sub: `${n('sms')} SMS · ${n('email')} Email · ${n('phone')} calls` });
   }
   function detailHTML(o) {
     return `<div class="detail-top ${S.ui.compact ? 'compact' : ''}" id="detailTop">
@@ -478,8 +483,10 @@
 
   /* ------------------------------------------------------------ sheets, dialogs, toast */
   const sheet = $('#bsheet'), overlay = $('#overlay');
-  function openSheet({ title, body = '', foot = '', tall = false, onMount }) {
-    sheet.onclick = null; sheet.onchange = null; sheet.oninput = null;
+  let closeGuard = null;
+  const requestClose = () => (closeGuard ? closeGuard() : closeSheet());
+  function openSheet({ title, body = '', foot = '', tall = false, onMount, guard = null }) {
+    sheet.onclick = null; sheet.onchange = null; sheet.oninput = null; sheet.onmousedown = null; closeGuard = guard;
     $('#bsTitle').textContent = title; $('#bsBody').innerHTML = body; $('#bsFoot').innerHTML = foot;
     sheet.classList.toggle('tall', tall);
     sheet.style.transform = '';
@@ -504,7 +511,7 @@
     if (!sheet.classList.contains('show')) overlay.classList.remove('show');
     setTimeout(() => { d.hidden = true; if (!sheet.classList.contains('show')) overlay.hidden = true; }, 220);
   }
-  overlay.addEventListener('click', () => { if (!$('#dialog').hidden) closeDialog(); else closeSheet(); });
+  overlay.addEventListener('click', () => { if (!$('#dialog').hidden) closeDialog(); else requestClose(); });
   let toastT;
   function toast(msg, icon = 'check') {
     const t = $('#toast'); t.innerHTML = `${ic(icon)}<span>${msg}</span>`; t.hidden = false; void t.offsetWidth; t.classList.add('show');
@@ -518,17 +525,17 @@
       sd = { y: e.clientY, dy: 0 }; sheet.style.transition = 'none'; sheet.setPointerCapture(e.pointerId);
     });
     sheet.addEventListener('pointermove', (e) => { if (!sd) return; sd.dy = Math.max(0, e.clientY - sd.y); sheet.style.transform = `translateY(${sd.dy}px)`; });
-    const end = () => { if (!sd) return; sheet.style.transition = ''; if (sd.dy > 90) { sheet.style.transform = ''; closeSheet(); } else sheet.style.transform = ''; sd = null; };
+    const end = () => { if (!sd) return; sheet.style.transition = ''; if (sd.dy > 90) { sheet.style.transform = ''; requestClose(); } else sheet.style.transform = ''; sd = null; };
     sheet.addEventListener('pointerup', end); sheet.addEventListener('pointercancel', end);
   })();
 
-  const recip = (o, line) => `<div class="recip"><div class="ctx-avatar">${esc(initials(o.name))}</div><div><b>${esc(o.name || 'Vehicle Owner unavailable')}</b><small>${line}</small></div></div>`;
-  const REASONS = ['Vehicle Owner requested a later date', 'Waiting on Vehicle Owner decision', 'Waiting on parts or pricing', 'Unable to reach Vehicle Owner', 'Vehicle Owner scheduled service', 'Other'];
+  /* ------------------------------------------------------------ Follow-Up Date helpers (shared by every sheet) */
+  const REASONS = ['Vehicle Owner Requested Later Follow-Up', 'Unable to Reach Vehicle Owner', 'Awaiting Vehicle Owner Decision', 'Quote Being Prepared', 'Quote Shared—Awaiting Response', 'Service Appointment Scheduled', 'Awaiting Tire Availability', 'Awaiting Dealership Action', 'Awaiting Repair Order Update', 'Manager Review or Escalation', 'Follow-Up Date Correction', 'Other'];
   function dateBlock(o, draft, label = 'Follow-Up Date') {
     const changed = draft.date !== isoDay(o.follow);
     return `<div class="sheet-section" id="dateBlock"><h4>${label}</h4>
       <label class="field"><span>Next Follow-Up · currently ${due(o).long}</span><input class="input" type="date" data-f="date" value="${draft.date}"></label>
-      <div ${changed ? '' : 'hidden'} id="reasonWrap"><label class="field"><span>Reason for changing the date <b>*</b></span><select class="select ${draft.err === 'reason' ? 'invalid' : ''}" data-f="reason"><option value="">Select a Reason</option>${REASONS.map((r) => `<option ${draft.reason === r ? 'selected' : ''}>${r}</option>`).join('')}</select>${draft.err === 'reason' ? '<div class="field-error">A Reason is required when the Follow-Up Date changes.</div>' : ''}</label></div></div>`;
+      <div ${changed ? '' : 'hidden'} id="reasonWrap"><label class="field"><span>Reason for Date Change <b>*</b></span><select class="select ${draft.err === 'reason' ? 'invalid' : ''}" data-f="reason"><option value="">Select a Reason…</option>${REASONS.map((r) => `<option ${draft.reason === r ? 'selected' : ''}>${r}</option>`).join('')}</select>${draft.err === 'reason' ? '<div class="field-error">A Reason is required when the Follow-Up Date changes.</div>' : ''}</label></div></div>`;
   }
   function applyDate(o, draft, source) {
     if (draft.date === isoDay(o.follow)) return false;
@@ -536,30 +543,6 @@
     o.timeline.unshift({ type: 'date', title: 'Follow-Up Date changed', text: `${monY(prev)} → ${monY(o.follow)} · ${draft.reason}${draft.reasonNote ? ` — ${draft.reasonNote}` : ''} (from ${source})`, at: new Date(), actor: ME, scope: 'Follow-Up', fresh: true });
     return true;
   }
-  const blockLink = (o, k) => `<div style="text-align:center;margin-top:4px"><button class="link-btn tap" data-f="block" style="color:var(--red-ink)">${ic('block')}Block ${LABEL[k] === 'Phone' ? 'calls' : LABEL[k]} for this Vehicle Owner</button></div>`;
-  function wireBlock(o, k) {
-    confirmDialog({ title: `Block ${LABEL[k] === 'Phone' ? 'calls' : LABEL[k]}?`, html: `<p>${esc(o.name || 'This Vehicle Owner')} will no longer be contacted by ${LABEL[k] === 'Phone' ? 'phone' : LABEL[k]}. Other communication methods are not affected.</p>`, ok: 'Block', okCls: 'btn-danger',
-      onOk: () => { o.comm[k].state = 'blocked'; o.timeline.unshift({ type: 'status', title: `${LABEL[k]} blocked`, text: `${LABEL[k]} communication blocked for this Vehicle Owner.`, at: new Date(), actor: ME, scope: 'Follow-Up', fresh: true }); closeSheet(); renderAll(); toast(`${LABEL[k]} blocked`, 'block'); } });
-  }
-
-  function openUnavailable(o, k) {
-    const st = o.comm[k].state, blocked = st === 'blocked';
-    const extra = k === 'sms' && o.landline ? ' The number on file is a landline.' : '';
-    openSheet({
-      title: `${k === 'call' ? 'Call' : k === 'sms' ? 'Send SMS' : 'Send Email'} ${blocked ? 'blocked' : 'unavailable'}`,
-      body: `${recip(o, esc(k === 'email' ? (o.email || 'No Email Address') : (o.phone || 'No phone number')))}<div class="notice ${blocked ? 'danger' : 'muted'}">${ic(blocked ? 'block' : 'info')}<div><b>${blocked ? `${LABEL[k]} is blocked` : `${LABEL[k]} is not available`}</b>${FLY[k][st]}${extra}</div></div>`,
-      foot: blocked ? `<button class="btn btn-outline" data-f="close">Close</button><button class="btn btn-primary" data-f="unblock">Unblock ${LABEL[k]}</button>` : `<button class="btn btn-outline" data-f="close">Close</button><button class="btn btn-primary" data-f="edit">Edit Vehicle Owner</button>`,
-      onMount: () => {
-        sheet.onclick = (e) => {
-          const b = e.target.closest('[data-f]'); if (!b) return;
-          if (b.dataset.f === 'close') closeSheet();
-          if (b.dataset.f === 'edit') { closeSheet(); toast('Edit Vehicle Owner opens the existing popup (separate design unit)', 'info'); }
-          if (b.dataset.f === 'unblock') confirmDialog({ title: `Unblock ${LABEL[k]}?`, html: `<p>Confirm the Vehicle Owner has agreed to be contacted by ${LABEL[k] === 'Phone' ? 'phone' : LABEL[k]} again.</p>`, ok: 'Unblock', onOk: () => { o.comm[k].state = 'available'; o.timeline.unshift({ type: 'status', title: `${LABEL[k]} unblocked`, text: `${LABEL[k]} communication allowed again.`, at: new Date(), actor: ME, scope: 'Follow-Up', fresh: true }); closeSheet(); renderAll(); toast(`${LABEL[k]} unblocked`); } });
-        };
-      }
-    });
-  }
-
   function markShared(o, type, via) {
     const key = type === 'tire' ? 'tireQuote' : 'alignQuote';
     if (!o[key]) return;
@@ -567,108 +550,253 @@
     o.timeline.unshift({ type: 'share', title: `${type === 'tire' ? 'Tire' : 'Alignment'} Quote ${was === 'shared' ? 're-shared' : 'shared'}`, text: `Quote ${type === 'tire' ? o.tq.id : o.aqd.id} sent to the Vehicle Owner by ${via}.`, at: new Date(), actor: ME, scope: type === 'tire' ? 'Tire' : 'Alignment', link: [type === 'tire' ? 'tire-quote' : 'align-quote', 'View Quote'], fresh: true });
   }
 
-  /* --- Send SMS / Send Email (shared composition pattern) */
-  function openCompose(o, k, preset = {}) {
-    if (o.comm[k].state !== 'available') return openUnavailable(o, k);
-    const isSms = k === 'sms', fn = firstName(o);
-    const TPL = isSms ? {
-      results: ['Visit results', `Hi ${fn}, your vehicle inspection results from ${T.DEALER} are ready: trx.link/v/${o.visitId}`],
-      quote: ['Quote', `Hi ${fn}, here is your Quote from ${T.DEALER}. Reply or call us to schedule: trx.link/q/${o.visitId}`],
-      callback: ['Call-back', `Hi ${fn}, this is ${ME_FIRST} from ${T.DEALER} returning your call-back request. When is a good time to talk?`]
-    } : {
-      results: ['Visit results', `Hi ${fn},\n\nThank you for visiting ${T.DEALER}. Your vehicle inspection results and our Recommendations are ready to review.\n\n${ME}`],
-      quote: ['Quote', `Hi ${fn},\n\nAttached is the Quote we discussed. Let us know if you have any questions or would like to schedule service.\n\n${ME}`],
-      callback: ['Call-back', `Hi ${fn},\n\nThank you for reaching out. I tried to call you back — please reply with a good time to talk.\n\n${ME}`]
-    };
-    const start = preset.quote ? 'quote' : o.callback ? 'callback' : 'results';
+  /* ------------------------------------------------------------ Send SMS · Send Email · Make Call
+     Same pattern as web mockup v007: Compose and History views, Vehicle Owner contact review,
+     ONE system-prepared message (no message-type choice), protected link and opt-out / footer
+     that the user cannot edit and that are always sent, independent Block controls. */
+  const OUTCOMES = ['No Answer', 'Busy', 'Voicemail', 'Wrong Number', 'Do Not Call', 'Declined Service', 'Request Callback Later', 'Schedule Appointment for Service', 'Other'];
+  const OPT_OUT = 'Reply STOP to stop';
+  const FOOTER = `${T.DEALER} · 1234 Service Drive · Plano, TX 75023`;
+  const LINK_TEXT = 'View Vehicle Recommendations and Quotes';
+  const linkFor = (o) => `https://traxtion.tireprofiles.com/r/${o.visitId}`;
+  const KIND = {
+    sms: { title: 'Send SMS', tab: 'Compose SMS', hist: 'SMS History', block: 'Block SMS', blockSub: 'Independent of Email blocking and Do Not Call', addrLabel: 'Mobile Number', type: 'sms', word: 'SMS' },
+    email: { title: 'Send Email', tab: 'Compose Email', hist: 'Email History', block: 'Block Email', blockSub: 'Independent of SMS blocking and Do Not Call', addrLabel: 'Email Address', type: 'email', word: 'Email' },
+    call: { title: 'Make Call', tab: 'Make Call', hist: 'Phone History', block: 'Do Not Call', blockSub: 'Independent of SMS and Email blocking', addrLabel: 'Phone Number', type: 'phone', word: 'Phone' }
+  };
+  const digits = (s) => String(s || '').replace(/\D/g, '');
+  const fmtPhone = (s) => { const x = digits(s).slice(-10); return x.length === 10 ? `(${x.slice(0, 3)}) ${x.slice(3, 6)}-${x.slice(6)}` : String(s || ''); };
+  const validEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim());
+  const oppLabel = (o) => [o.tireStatus ? 'Tire' : '', o.alignStatus ? 'Alignment' : ''].filter(Boolean).join(' and ') || 'Follow-Up';
+  const quotesInLink = (o) => [o.tireQuote ? `the Tire Quote (${money(o.tq.total)})` : '', o.alignQuote ? `the Alignment Quote (${money(o.aqd.total)})` : ''].filter(Boolean);
+  const stripHtml = (h) => { const t = document.createElement('div'); t.innerHTML = String(h).replace(/<\/(p|li|div)>/g, ' $&'); return t.textContent.replace(/\s+/g, ' ').trim(); };
+
+  /* One history row, used by every History tab and by the Communication Log */
+  function histItem(c) {
+    const label = c.type === 'phone' ? 'Phone' : c.type === 'sms' ? 'SMS' : 'Email';
+    const long = (c.text || '').length > 120;
+    const body = c.type === 'phone'
+      ? `<b>${esc(c.outcome)}</b>${c.note ? `<p>${esc(c.note)}</p>` : ''}`
+      : `${c.subject ? `<b>${esc(c.subject)}</b>` : ''}<p class="${long ? 'clamp' : ''}">${esc(c.text)}</p>${long ? '<button class="more-btn" data-more>Show more</button>' : ''}`;
+    return `<div class="hist ${c.fresh ? 'fresh' : ''}"><div class="hist-top"><span class="type-pill ${c.type}">${label}</span><span class="hist-when">${monY(c.at)} · ${time(c.at)}</span><span class="cur ${c.current ? 'yes' : 'no'}">${c.current ? 'Current Opportunity' : 'Other Opportunity'}</span></div>
+      <div class="hist-body">${body}</div>
+      <div class="hist-meta">${c.type === 'phone' ? 'Called' : 'Sent to'} <b>${esc(c.addr)}</b> · ${c.type === 'phone' ? 'Called by' : 'Sent by'} <b>${esc(c.by)}</b></div></div>`;
+  }
+
+  function openComm(o, k, opts = {}) {
+    const K = KIND[k], isSms = k === 'sms', isEmail = k === 'email', isCall = k === 'call';
+    /* Known numbers / addresses for this Vehicle Owner (web shows an available and a blocked one) */
+    const options = [];
+    if (isEmail) { if (o.email) options.push({ v: o.email }); if (o.altEmail) options.push({ v: o.altEmail, blocked: true }); }
+    else { if (o.phone) options.push({ v: o.phone, landline: isSms && o.landline }); if (o.altPhone) options.push({ v: o.altPhone, blocked: true }); }
+    const usable = options.find((x) => !x.blocked && !x.landline);
+    const [fn0, ...ln0] = (o.name || '').split(' ');
+    const base = { first: fn0 || '', last: ln0.join(' '), addr: (usable || options[0] || { v: '' }).v };
+    const greet = fn0 || 'there';
+    const extra = quotesInLink(o).length ? ' We prepared quotes for the recommended work.' : '';
     const d = {
-      tpl: start, text: TPL[start][1], subject: start === 'quote' ? `Your Quote from ${T.DEALER}` : `Your vehicle results from ${T.DEALER}`,
-      tire: preset.quote === 'tire', align: preset.quote === 'align', date: isoDay(o.follow), reason: '', err: ''
+      tab: opts.tab || 'compose', editing: !usable, manual: !options.length, ...base,
+      text: isSms ? `Hello ${greet}, your ${oppLabel(o)} results from ${T.DEALER} are ready.${extra} Please review the details and contact us with any questions.` : '',
+      html: isEmail ? `<p>Hello ${esc(greet)},</p><p>Your ${oppLabel(o)} results from ${T.DEALER} are ready.${extra} Please review the details and contact us with any questions.</p>` : '',
+      subject: `Your Vehicle Recommendations from ${T.DEALER}`,
+      date: isoDay(o.follow), reason: '', fnote: '', step: 'ready', outcome: '', cnote: ''
     };
-    const quotesHTML = () => (o.tireQuote || o.alignQuote) ? `<div class="sheet-section"><h4>Include Quote</h4>${o.tireQuote ? `<button class="opt ${d.tire ? 'on' : ''}" data-f="q" data-v="tire"><span class="check"><span class="box" style="${d.tire ? 'background:var(--cyan);border-color:var(--cyan)' : ''}">${d.tire ? ic('check').replace('<svg', '<svg style="opacity:1"') : ''}</span></span><div><b>Tire Quote · ${money(o.tq.total)}</b><small>${o.tireQuote === 'shared' ? 'Already shared' : 'Not shared yet'} · marks the Quote shared</small></div></button>` : ''}${o.alignQuote ? `<button class="opt ${d.align ? 'on' : ''}" data-f="q" data-v="align"><span class="check"><span class="box" style="${d.align ? 'background:var(--cyan);border-color:var(--cyan)' : ''}">${d.align ? ic('check').replace('<svg', '<svg style="opacity:1"') : ''}</span></span><div><b>Alignment Quote · ${money(o.aqd.total)}</b><small>${o.alignQuote === 'shared' ? 'Already shared' : 'Not shared yet'} · marks the Quote shared</small></div></button>` : ''}</div>` : '';
-    const body = () => `${recip(o, `${esc(isSms ? o.phone : o.email)} · ${avail(isSms ? 'SMS' : 'Email', 'available')}`)}
-      <div class="sheet-section"><h4>Message</h4><div class="chip-wrap" style="margin-bottom:12px">${Object.entries(TPL).map(([key, v]) => `<button class="chip ${d.tpl === key ? 'active' : ''}" data-f="tpl" data-v="${key}">${v[0]}</button>`).join('')}</div>
-        ${isSms ? '' : `<label class="field"><span>Subject <b>*</b></span><input class="input ${d.err === 'subject' ? 'invalid' : ''}" data-f="subject" value="${esc(d.subject)}">${d.err === 'subject' ? '<div class="field-error">Subject is required.</div>' : ''}</label>`}
-        <label class="field"><span>${isSms ? 'SMS text' : 'Email body'} <b>*</b>${isSms ? `<span class="char-count" id="cc">${d.text.length}/320</span>` : ''}</span><textarea class="textarea ${d.err === 'text' ? 'invalid' : ''}" data-f="text" ${isSms ? 'maxlength="320"' : 'style="min-height:150px"'}>${esc(d.text)}</textarea>${d.err === 'text' ? '<div class="field-error">Enter a message.</div>' : ''}${isSms ? '' : '<div class="field-hint">The dealership footer and unsubscribe link are added automatically.</div>'}</label></div>
-      ${quotesHTML()}${dateBlock(o, d, 'Follow-Up Date (optional)')}${blockLink(o, k)}`;
-    const draw = () => { const y = $('#bsBody').scrollTop; $('#bsBody').innerHTML = body(); $('#bsBody').scrollTop = y; };
+    const start = { text: d.text, html: d.html, subject: d.subject };
+    const hist = () => o.comms.filter((c) => c.type === K.type);
+    const blocked = () => o.comm[k].state === 'blocked';
+    const selOpt = () => (d.manual ? null : options.find((x) => x.v === d.addr));
+    const contactDirty = () => d.first !== base.first || d.last !== base.last || d.addr !== base.addr;
+    const dirty = () => contactDirty() || d.text !== start.text || d.html !== start.html || d.subject !== start.subject || d.date !== isoDay(o.follow) || !!(d.reason || d.fnote || d.cnote || d.outcome);
+    const changed = () => d.date !== isoDay(o.follow);
+
+    function problems() {
+      const p = {}, so = selOpt();
+      if (!d.first.trim() && !d.last.trim()) p.name = 'Enter a First Name or Last Name.';
+      if (blocked()) p.addr = isCall ? 'Do Not Call is on for this Vehicle Owner.' : `${K.word} is blocked for this Vehicle Owner.`;
+      else if (isEmail ? !validEmail(d.addr) : digits(d.addr).length !== 10) p.addr = isEmail ? 'Enter a valid Email Address.' : `Enter a valid 10-digit ${K.addrLabel}.`;
+      else if (so && so.blocked) p.addr = isCall ? 'This Phone Number is marked Do Not Call.' : `This ${K.addrLabel} is blocked from ${K.word}.`;
+      else if (so && so.landline) p.addr = 'This number is a landline and cannot receive SMS.';
+      if (isSms && !d.text.trim()) p.msg = 'Enter a message before sending.';
+      if (isEmail && !d.subject.trim()) p.subject = 'Enter a Subject.';
+      if (isEmail && !stripHtml(d.html)) p.msg = 'Enter a message before sending.';
+      if (changed() && !d.reason) p.reason = 'Select a Reason for the date change.';
+      if (changed() && d.reason === 'Other' && !d.fnote.trim()) p.fnote = 'Add a Note explaining the Other reason.';
+      if (isCall && d.step === 'outcome' && !d.outcome) p.outcome = 'Select an Outcome.';
+      if (isCall && d.step === 'outcome' && d.outcome === 'Other' && !d.cnote.trim()) p.cnote = 'Use the Call Note to explain the Other outcome.';
+      return p;
+    }
+    const SHORT = { name: 'Vehicle Owner name is required', msg: 'Message is required', subject: 'Subject is required', reason: 'Date-change Reason is required', fnote: 'Note is required for Other', outcome: 'Outcome is required', cnote: 'Call Note is required for Other' };
+
+    const smsCounts = () => { const full = `${d.text}\n${linkFor(o)}\n${OPT_OUT}`; const segs = full.length <= 160 ? 1 : Math.ceil(full.length / 153); return `<b>${full.length}</b> characters · <b>${segs}</b> SMS segment${segs === 1 ? '' : 's'}`; };
+    const quoteNote = () => { const q = quotesInLink(o); return q.length ? `<div class="notice info" style="margin:10px 0 0">${ic('info')}<div>The report link opens the Visit results and ${q.join(' and ')}. Sending marks ${q.length > 1 ? 'them' : 'it'} <b style="display:inline">Shared</b>.</div></div>` : ''; };
+
+    function contactHTML(p) {
+      const so = selOpt();
+      const st = blocked() || (so && so.blocked) ? 'blocked' : (!d.addr || (so && so.landline)) ? 'unavailable' : 'available';
+      const name = `${d.first} ${d.last}`.trim();
+      return `<div class="contact-card"><div class="cc-head">Vehicle Owner Contact</div>
+        <div class="cc-row"><div class="ctx-avatar">${esc(initials(name))}</div>
+          <div class="cc-txt"><b>${esc(name || 'Vehicle Owner unavailable')}</b><small>${esc(d.addr || `No ${K.addrLabel} on file`)}</small>${avail(isCall ? 'Call' : K.word, st)}</div>
+          <button class="link-btn tap" data-f="edit">${ic('edit')}${d.editing ? 'Done' : 'Edit'}</button></div>
+        ${d.editing ? `<div class="cc-edit"><p class="field-hint" style="margin:0 0 10px">Review or correct the information used for this ${isCall ? 'call' : 'message'}.</p>
+          <div class="two"><label class="field"><span>First Name</span><input class="input" data-f="first" value="${esc(d.first)}" autocomplete="off"></label><label class="field"><span>Last Name</span><input class="input" data-f="last" value="${esc(d.last)}" autocomplete="off"></label></div>
+          <div class="field-error" data-err="name" style="margin:-8px 0 10px"></div>
+          <label class="field"><span>${K.addrLabel}</span><select class="select" data-f="choice">${options.map((x) => `<option value="${esc(x.v)}" ${!d.manual && d.addr === x.v ? 'selected' : ''}>${esc(x.v)} · ${x.blocked ? (isCall ? 'Do Not Call' : 'Blocked') : x.landline ? 'Landline' : 'Available'}</option>`).join('')}<option value="__manual" ${d.manual ? 'selected' : ''}>${isEmail ? 'Enter another address…' : 'Enter another number…'}</option></select></label>
+          ${d.manual ? `<label class="field"><span>New ${K.addrLabel}</span><input class="input" data-f="addr" value="${esc(d.addr)}" ${isEmail ? 'type="email" inputmode="email" placeholder="name@example.com"' : 'type="tel" inputmode="tel" placeholder="(555) 555-0100"'}></label>` : ''}
+          <button class="btn btn-outline btn-sm tap" data-f="savecontact" id="saveContact" disabled>Save Contact Changes</button></div>` : ''}
+        <div class="field-error cc-err" data-err="addr"></div>
+        <label class="cc-block"><div><b>${K.block}</b><small>${K.blockSub}</small></div><span class="switch"><input type="checkbox" data-f="block" ${blocked() ? 'checked' : ''} aria-label="${K.block}"><i></i></span></label></div>`;
+    }
+    function followHTML() {
+      const ch = changed();
+      return `<div class="sheet-section"><h4>Next Follow-Up</h4>
+        <label class="field"><span>Follow-Up Date · currently ${due(o).long}</span><input class="input" type="date" data-f="date" value="${d.date}"></label>
+        <label class="field"><span>Reason for Date Change${ch ? ' <b>*</b>' : ''}</span><select class="select" data-f="reason" id="reasonSel" ${ch ? '' : 'disabled'}><option value="">Select a Reason…</option>${REASONS.map((r) => `<option ${d.reason === r ? 'selected' : ''}>${r}</option>`).join('')}</select><div class="field-error" data-err="reason"></div></label>
+        <label class="field"><span>Internal Follow-Up Note</span><textarea class="textarea" data-f="fnote" id="fnote" style="min-height:64px" placeholder="Optional unless the Reason is Other." ${ch ? '' : 'disabled'}>${esc(d.fnote)}</textarea><div class="field-error" data-err="fnote"></div></label></div>`;
+    }
+    function smsHTML() {
+      return `<div class="sheet-section"><div class="row-between"><h4 style="margin:0">Message</h4><span class="counts" id="counts">${smsCounts()}</span></div>
+        <p class="field-hint" style="margin:4px 0 10px">TraXtion has prepared one message. Edit the greeting and main text as needed.</p>
+        <div class="msg-box"><div class="mb-label">Editable message</div><textarea class="mb-edit" data-f="text" rows="5" aria-label="Editable message">${esc(d.text)}</textarea>
+          <div class="protected">${ic('lock')}<div><span>Vehicle Owner report link</span><strong>${linkFor(o)}</strong><small>Opens the Vehicle Owner's report with the Visit results, Recommendations, and Quotes. Added by TraXtion and always sent. It cannot be edited.</small></div></div>
+          <div class="protected">${ic('lock')}<div><span>Required opt-out</span><strong>${OPT_OUT}</strong><small>Required on every SMS. It cannot be edited.</small></div></div></div>
+        <div class="field-error" data-err="msg"></div>${quoteNote()}</div>`;
+    }
+    function emailHTML() {
+      return `<div class="sheet-section"><h4>Email Message</h4><p class="field-hint" style="margin:-4px 0 10px">TraXtion has prepared one formatted Email. Edit the Subject and main text as needed.</p>
+        <label class="field"><span>Subject <b>*</b></span><input class="input" data-f="subject" value="${esc(d.subject)}"><div class="field-error" data-err="subject"></div></label>
+        <div class="msg-box"><div class="mb-label">Editable message</div>
+          <div class="fmt-bar"><button type="button" class="tap" data-f="fmt" data-v="bold" aria-label="Bold"><b>B</b></button><button type="button" class="tap" data-f="fmt" data-v="italic" aria-label="Italic"><i>I</i></button><button type="button" class="tap" data-f="fmt" data-v="insertUnorderedList" aria-label="Bulleted list">• List</button></div>
+          <div class="mb-edit email-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Editable message" data-f="html">${d.html}</div>
+          <div class="protected">${ic('lock')}<div><span>Vehicle Owner report link</span><strong class="plink">${LINK_TEXT}</strong><em class="purl">${linkFor(o)}</em><small>Opens the Vehicle Owner's report with the Visit results, Recommendations, and Quotes. Added by TraXtion and always sent. It cannot be edited.</small></div></div>
+          <div class="protected">${ic('lock')}<div><span>Required footer</span><strong>${FOOTER}<br>Unsubscribe from these messages</strong><small>Dealership identification and opt-out text required on every Email. Always sent; it cannot be edited.</small></div></div></div>
+        <div class="field-error" data-err="msg"></div>${quoteNote()}</div>`;
+    }
+    function callHTML(p) {
+      if (d.step === 'ready') return `${contactHTML(p)}<button class="btn btn-green btn-block tap" data-f="dial" style="height:50px;margin-top:2px" ${p.name || p.addr ? 'disabled' : ''}>${ic('call')}Make Call</button><p class="field-hint" style="text-align:center;margin-top:8px">The call is placed from this device. Record the outcome when the call ends.</p>`;
+      return `<div class="notice info">${ic('call')}<div><b>Call started to ${esc(d.addr)}</b>The behavior used to place the call is pending. Record the outcome below after completing the call.</div></div>
+        <div class="sheet-section"><h4>Record Call Outcome</h4><p class="field-hint" style="margin:-4px 0 10px">Save the attempt, its result, any call-specific Note, and the next Follow-Up Date together.</p><div class="out-grid">${OUTCOMES.map((x) => `<button class="opt ${d.outcome === x ? 'on' : ''}" data-f="out" data-v="${x}"><span class="radio"></span><div><b>${x}</b></div></button>`).join('')}</div><div class="field-error" data-err="outcome"></div></div>
+        <label class="field"><span>Call Note</span><textarea class="textarea" data-f="cnote" placeholder="Add information specific to this call. Use the Note to explain an Other outcome.">${esc(d.cnote)}</textarea><div class="field-hint">This Note is saved with the call event.</div><div class="field-error" data-err="cnote"></div></label>
+        ${followHTML()}`;
+    }
+    function bodyHTML() {
+      const p = problems(), h = hist();
+      const strip = `<div class="ctx-strip"><div><span>Vehicle Owner</span><b>${esc(o.name || '—')}</b></div><div><span>Vehicle</span><b>${esc(o.vehicle)}</b></div><div><span>Visit</span><b>${mon(o.visitAt)} · ${time(o.visitAt)}</b></div><div><span>Opportunity</span><b>${oppLabel(o)}</b></div></div>`;
+      const tabs = `<div class="seg full comm-tabs" role="tablist"><button class="${d.tab === 'compose' ? 'active' : ''}" data-f="tab" data-v="compose" role="tab">${K.tab}</button><button class="${d.tab === 'history' ? 'active' : ''}" data-f="tab" data-v="history" role="tab">${K.hist}<span class="tab-n">${h.length}</span></button></div>`;
+      if (d.tab === 'history') {
+        const who = isCall ? 'Call attempts for every Phone Number' : isSms ? 'Messages sent to every Mobile Number' : 'Email sent to every Email Address';
+        return strip + tabs + `<p class="hist-intro">${who} associated with <b>${esc(o.name || 'this Vehicle Owner')}</b>, newest first. Entries from other Opportunities stay visible as contact history.</p>` + (h.length ? h.map(histItem).join('') : `<div class="empty-inline">No ${isCall ? 'calls' : K.word} recorded for this Vehicle Owner yet.</div>`);
+      }
+      const notice = blocked()
+        ? `<div class="notice danger">${ic('block')}<div><b>${isCall ? 'Do Not Call is on' : `${K.word} is blocked`}</b>${FLY[k].blocked} Turn off ${K.block} below only if the Vehicle Owner agreed to be contacted again.</div></div>`
+        : (!options.length ? `<div class="notice muted">${ic('info')}<div><b>No ${K.addrLabel} on file</b>${FLY[k].unavailable} Enter one below to continue.</div></div>` : '');
+      if (isCall) return strip + tabs + notice + callHTML(p);
+      return strip + tabs + notice + contactHTML(p) + (isSms ? smsHTML() : emailHTML()) + followHTML();
+    }
+    function footHTML() {
+      if (d.tab === 'history') return `<button class="btn btn-outline" data-f="close">Close</button><button class="btn btn-primary" data-f="tab" data-v="compose">${isCall ? 'Make Call' : K.tab}</button>`;
+      if (isCall && d.step === 'ready') return `<button class="btn btn-outline" data-f="close">Close</button>`;
+      const p = problems();
+      const keys = Object.keys(p).filter((x) => !isCall || ['reason', 'fnote', 'outcome', 'cnote'].includes(x));
+      const why = keys.length ? `<div class="send-reason">${keys.map((x) => esc(x === 'addr' ? p.addr.replace(/\.$/, '') : SHORT[x])).join(' · ')}</div>` : '';
+      return `${why}<button class="btn btn-outline" data-f="close">Cancel</button><button class="btn btn-primary" data-f="${isCall ? 'save' : 'send'}" ${keys.length ? 'disabled' : ''}>${isCall ? 'Save Call Outcome' : `${ic(k)}Send ${K.word}`}</button>`;
+    }
+    function refresh() {
+      const p = problems();
+      $$('#bsBody [data-err]').forEach((el) => { el.textContent = p[el.dataset.err] || ''; });
+      $$('#bsBody [data-f="first"], #bsBody [data-f="last"]').forEach((el) => el.classList.toggle('invalid', !!p.name));
+      const c = $('#counts'); if (c) c.innerHTML = smsCounts();
+      const ch = changed(); const rs = $('#reasonSel'); if (rs) rs.disabled = !ch; const fn = $('#fnote'); if (fn) fn.disabled = !ch;
+      const sc = $('#saveContact'); if (sc) sc.disabled = !contactDirty() || !!p.name;
+      const dial = $('#bsBody [data-f="dial"]'); if (dial) dial.disabled = !!(p.name || p.addr);
+      $('#bsFoot').innerHTML = footHTML();
+    }
+    const draw = () => { const b = $('#bsBody'), y = b.scrollTop; b.innerHTML = bodyHTML(); b.scrollTop = y; refresh(); };
+
+    function setBlocked(on) {
+      o.comm[k].state = on ? 'blocked' : (isEmail ? (o.email ? 'available' : 'unavailable') : (o.phone && !(isSms && o.landline) ? 'available' : 'unavailable'));
+      o.timeline.unshift({ type: 'status', title: isCall ? `Do Not Call turned ${on ? 'on' : 'off'}` : `${K.word} ${on ? 'blocked' : 'unblocked'}`, text: 'Changed from the communication popup. Other communication methods are not affected.', at: new Date(), actor: ME, scope: 'Follow-Up', fresh: true });
+      renderAll(); draw();
+      toast(isCall ? `Do Not Call ${on ? 'on' : 'off'}` : `${K.word} ${on ? 'blocked' : 'unblocked'}`, on ? 'block' : 'check');
+    }
+    function saveContact() {
+      const name = `${d.first} ${d.last}`.trim(); if (!name) return refresh();
+      o.name = name;
+      if (d.manual && (isEmail ? validEmail(d.addr) : digits(d.addr).length === 10)) {
+        const v = isEmail ? d.addr.trim() : fmtPhone(d.addr);
+        if (isEmail) { o.email = v; if (o.comm.email.state === 'unavailable') o.comm.email.state = 'available'; }
+        else { o.phone = v; o.landline = false; ['call', 'sms'].forEach((x) => { if (o.comm[x].state === 'unavailable') o.comm[x].state = 'available'; }); }
+        options.unshift({ v }); d.addr = v; d.manual = false;
+      }
+      Object.assign(base, { first: d.first, last: d.last, addr: d.addr });
+      d.editing = false; renderAll(); draw(); toast('Vehicle Owner contact changes saved');
+    }
+    function commitFollow(source) {
+      if (!changed()) return false;
+      const note = d.fnote.trim();
+      o.notesList.unshift({ author: ME, at: new Date(), text: note, reason: d.reason, newDate: fromIso(d.date), fresh: true });
+      o.comm.notes.count++;
+      return applyDate(o, { date: d.date, reason: d.reason, reasonNote: note }, source);
+    }
+    function send() {
+      if (Object.keys(problems()).length) return draw();
+      const shown = isEmail ? d.addr.trim() : `+1 ${fmtPhone(d.addr)}`;
+      o.comm[k].count++;
+      if (isSms) o.comms.unshift({ type: 'sms', at: new Date(), addr: shown, by: ME, text: `${d.text.trim()} ${linkFor(o)} ${OPT_OUT}`, current: true, fresh: true });
+      else o.comms.unshift({ type: 'email', at: new Date(), addr: shown, by: ME, subject: d.subject.trim(), text: `${stripHtml(d.html)} ${LINK_TEXT}. ${FOOTER} · Unsubscribe from these messages`, current: true, fresh: true });
+      o.timeline.unshift({ type: k, title: `${K.word} sent — Current Opportunity`, text: isSms ? d.text.trim() : `${d.subject.trim()} — ${stripHtml(d.html).slice(0, 90)}…`, at: new Date(), actor: ME, scope: 'Follow-Up', link: ['comms', 'View Communication'], fresh: true });
+      const shared = [];
+      [['tire', 'tireQuote'], ['align', 'alignQuote']].forEach(([t, key]) => { if (o[key] === 'created' || (o[key] && opts.quote === t)) { markShared(o, t, K.word); shared.push(t); } });
+      const moved = commitFollow(K.title);
+      closeSheet(); renderAll();
+      toast(`${K.word} sent to ${esc(d.first || 'the Vehicle Owner')}${shared.length ? ' · Quote marked Shared' : ''}${moved ? ' · Follow-Up Date updated' : ''}`);
+    }
+    function saveOutcome() {
+      const p = problems(); if (['reason', 'fnote', 'outcome', 'cnote'].some((x) => p[x])) return draw();
+      o.comm.call.count++;
+      o.comms.unshift({ type: 'phone', at: new Date(), addr: `+1 ${fmtPhone(d.addr)}`, by: ME, outcome: d.outcome, note: d.cnote.trim(), current: true, fresh: true });
+      o.timeline.unshift({ type: 'phone', title: `Call attempt — ${d.outcome}`, text: d.cnote.trim() || 'No call-specific Note.', at: new Date(), actor: ME, scope: 'Follow-Up', link: ['comms', 'View Communication'], fresh: true });
+      if (d.outcome === 'Do Not Call') o.comm.call.state = 'blocked';
+      const moved = commitFollow('Record Call Outcome');
+      closeSheet(); renderAll();
+      toast(`Call outcome saved · ${d.outcome}${moved ? ' · Follow-Up Date updated' : ''}`);
+    }
+    function tryClose() {
+      if (!dirty() || d.tab === 'history' && !dirty()) return closeSheet();
+      confirmDialog({ title: 'Discard changes?', html: `<p>Your unsaved ${isCall ? 'call outcome' : K.word} changes will be lost.</p>`, ok: 'Discard', okCls: 'btn-danger', onOk: closeSheet });
+    }
+
     openSheet({
-      title: isSms ? 'Send SMS' : 'Send Email', tall: true, body: body(),
-      foot: `<button class="btn btn-outline" data-f="close">Cancel</button><button class="btn btn-primary" data-f="send">${ic(isSms ? 'sms' : 'email')}Send ${isSms ? 'SMS' : 'Email'}</button>`,
+      title: K.title, tall: true, body: bodyHTML(), guard: tryClose,
       onMount: () => {
+        refresh();
+        sheet.onmousedown = (e) => { if (e.target.closest('.fmt-bar button')) e.preventDefault(); }; // keep the text selection for B / I / List
         sheet.oninput = (e) => {
-          const f = e.target.dataset.f;
-          if (f === 'text') { d.text = e.target.value; const cc = $('#cc'); if (cc) cc.textContent = `${d.text.length}/320`; }
-          if (f === 'subject') d.subject = e.target.value;
+          const f = e.target.dataset && e.target.dataset.f; if (!f) return;
+          if (f === 'html') d.html = e.target.innerHTML;
+          else if (['text', 'subject', 'first', 'last', 'addr', 'cnote', 'fnote'].includes(f)) d[f] = e.target.value;
+          refresh();
         };
         sheet.onchange = (e) => {
           const f = e.target.dataset.f;
-          if (f === 'date') { d.date = e.target.value || isoDay(o.follow); $('#reasonWrap').hidden = d.date === isoDay(o.follow); }
-          if (f === 'reason') { d.reason = e.target.value; if (d.err === 'reason') { d.err = ''; draw(); } }
+          if (f === 'date') { d.date = e.target.value || isoDay(o.follow); if (!changed()) { d.reason = ''; d.fnote = ''; } draw(); }
+          if (f === 'reason') { d.reason = e.target.value; refresh(); }
+          if (f === 'choice') { if (e.target.value === '__manual') { d.manual = true; d.addr = ''; } else { d.manual = false; d.addr = e.target.value; } draw(); }
+          if (f === 'block') setBlocked(e.target.checked);
         };
         sheet.onclick = (e) => {
-          const b = e.target.closest('[data-f]'); if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT' || b.tagName === 'TEXTAREA') return;
+          const b = e.target.closest('[data-f]');
+          if (!b || ['INPUT', 'SELECT', 'TEXTAREA'].includes(b.tagName) || b.isContentEditable || b.tagName === 'LABEL') return;
           const f = b.dataset.f;
-          if (f === 'close') return closeSheet();
-          if (f === 'block') return wireBlock(o, k);
-          if (f === 'tpl') { d.tpl = b.dataset.v; d.text = TPL[d.tpl][1]; if (d.tpl === 'quote') { d.tire = !!o.tireQuote; d.align = !!o.alignQuote; } draw(); }
-          if (f === 'q') { d[b.dataset.v] = !d[b.dataset.v]; draw(); }
-          if (f === 'send') {
-            d.err = !d.text.trim() ? 'text' : (!isSms && !d.subject.trim()) ? 'subject' : (d.date !== isoDay(o.follow) && !d.reason) ? 'reason' : '';
-            if (d.err) { draw(); const bad = $('#bsBody .invalid'); if (bad) bad.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
-            o.comm[k].count++;
-            o.comms.unshift({ type: k, at: new Date(), from: ME, to: fn, subject: isSms ? '' : d.subject, text: d.text.replace(/\n+/g, ' '), result: 'Sent', current: true });
-            o.timeline.unshift({ type: k, title: `${isSms ? 'SMS' : 'Email'} sent — Current Opportunity`, text: isSms ? d.text : `${d.subject} — ${d.text.replace(/\n+/g, ' ').slice(0, 90)}…`, at: new Date(), actor: ME, scope: 'Follow-Up', link: ['comms', 'View Communication'], fresh: true });
-            if (d.tire) markShared(o, 'tire', isSms ? 'SMS' : 'Email');
-            if (d.align) markShared(o, 'align', isSms ? 'SMS' : 'Email');
-            const moved = applyDate(o, d, isSms ? 'Send SMS' : 'Send Email');
-            closeSheet(); renderAll();
-            toast(`${isSms ? 'SMS' : 'Email'} sent to ${esc(fn)}${d.tire || d.align ? ' · Quote marked shared' : ''}${moved ? ' · Follow-Up Date updated' : ''}`);
-          }
-        };
-      }
-    });
-  }
-
-  /* --- Make Call → Record Call Outcome */
-  function openCall(o) {
-    if (o.comm.call.state !== 'available') return openUnavailable(o, 'call');
-    const OUT = ['Connected — spoke with Vehicle Owner', 'No answer', 'Left voicemail', 'Busy', 'Wrong number', 'Asked to call back later'];
-    const d = { step: 'ready', outcome: '', note: '', date: isoDay(o.follow), reason: '', err: '' };
-    const body = () => d.step !== 'outcome'
-      ? `<div class="call-hero"><div class="ctx-avatar">${esc(initials(o.name))}</div><h4>${esc(o.name || 'Vehicle Owner')}</h4><p>${esc(o.phone)}</p>${avail('Call', 'available')}
-          <button class="call-btn tap ${d.step === 'calling' ? 'ringing' : ''}" data-f="dial" aria-label="Call">${ic('call')}</button>
-          <div class="call-status">${d.step === 'calling' ? 'Calling… (simulated)' : 'Tap to call from this device'}</div></div>
-         <div class="notice info">${ic('info')}<div><b>Calling behavior is pending</b>The device dialer opens the call. When you return, TraXtion asks for the call outcome so the attempt is counted.</div></div>${blockLink(o, 'call')}`
-      : `${recip(o, `${esc(o.phone)} · call just ended`)}
-         <div class="sheet-section"><h4>Record Call Outcome <b style="color:var(--red-ink)">*</b></h4>${OUT.map((x) => `<button class="opt ${d.outcome === x ? 'on' : ''}" data-f="out" data-v="${esc(x)}"><span class="radio"></span><div><b>${x}</b></div></button>`).join('')}${d.err === 'outcome' ? '<div class="field-error">Select the call outcome.</div>' : ''}</div>
-         <label class="field"><span>Call Note (optional)</span><textarea class="textarea" data-f="note" placeholder="What did the Vehicle Owner say?">${esc(d.note)}</textarea></label>
-         ${dateBlock(o, d, 'Follow-Up Date (optional)')}`;
-    const foot = () => d.step === 'outcome' ? `<button class="btn btn-outline" data-f="close">Cancel</button><button class="btn btn-primary" data-f="save">Save Outcome</button>` : `<button class="btn btn-outline" data-f="close">Close</button><button class="btn btn-outline" data-f="skip">Record outcome</button>`;
-    const draw = () => { $('#bsBody').innerHTML = body(); $('#bsFoot').innerHTML = foot(); };
-    openSheet({
-      title: d.step === 'outcome' ? 'Record Call Outcome' : 'Make Call', tall: true, body: body(), foot: foot(),
-      onMount: () => {
-        sheet.oninput = (e) => { if (e.target.dataset.f === 'note') d.note = e.target.value; };
-        sheet.onchange = (e) => { const f = e.target.dataset.f; if (f === 'date') { d.date = e.target.value || isoDay(o.follow); $('#reasonWrap').hidden = d.date === isoDay(o.follow); } if (f === 'reason') d.reason = e.target.value; };
-        sheet.onclick = (e) => {
-          const b = e.target.closest('[data-f]'); if (!b || ['INPUT', 'SELECT', 'TEXTAREA'].includes(b.tagName)) return;
-          const f = b.dataset.f;
-          if (f === 'close') return closeSheet();
-          if (f === 'block') return wireBlock(o, 'call');
-          if (f === 'dial' && d.step === 'ready') { d.step = 'calling'; draw(); setTimeout(() => { d.step = 'outcome'; $('#bsTitle').textContent = 'Record Call Outcome'; draw(); }, 1600); }
-          if (f === 'skip') { d.step = 'outcome'; $('#bsTitle').textContent = 'Record Call Outcome'; draw(); }
-          if (f === 'out') { d.outcome = b.dataset.v; if (d.err === 'outcome') d.err = ''; draw(); }
-          if (f === 'save') {
-            d.err = !d.outcome ? 'outcome' : (d.date !== isoDay(o.follow) && !d.reason) ? 'reason' : '';
-            if (d.err) { draw(); return; }
-            o.comm.call.count++;
-            const short = d.outcome.split(' — ')[0];
-            o.comms.unshift({ type: 'phone', at: new Date(), from: ME, to: firstName(o), text: d.note ? `Outbound call — ${d.note}` : 'Outbound call', result: short, current: true });
-            o.timeline.unshift({ type: 'phone', title: `Call attempt — ${short.toLowerCase()}`, text: d.note || 'No call-specific Note.', at: new Date(), actor: ME, scope: 'Follow-Up', link: ['comms', 'View Communication'], fresh: true });
-            const moved = applyDate(o, d, 'Record Call Outcome');
-            closeSheet(); renderAll(); toast(`Call outcome saved · ${short}${moved ? ' · Follow-Up Date updated' : ''}`);
-          }
+          if (f === 'close') return tryClose();
+          if (f === 'tab') { d.tab = b.dataset.v; draw(); $('#bsBody').scrollTop = 0; }
+          if (f === 'edit') { d.editing = !d.editing; draw(); }
+          if (f === 'savecontact') saveContact();
+          if (f === 'fmt') { document.execCommand(b.dataset.v); const eb = $('#bsBody .email-body'); if (eb) d.html = eb.innerHTML; refresh(); }
+          if (f === 'dial') { d.step = 'outcome'; $('#bsTitle').textContent = 'Record Call Outcome'; draw(); $('#bsBody').scrollTop = 0; }
+          if (f === 'out') { d.outcome = b.dataset.v; draw(); }
+          if (f === 'send') send();
+          if (f === 'save') saveOutcome();
         };
       }
     });
@@ -685,7 +813,7 @@
       title: 'Follow-Up Notes', tall: true, body: body(),
       foot: `<button class="btn btn-outline" data-f="close">Cancel</button><button class="btn btn-primary" data-f="save">Save</button>`,
       onMount: () => {
-        if (focusDate) { const inp = $('#bsBody [data-f="date"]'); setTimeout(() => { inp && inp.focus(); }, 340); }
+        if (focusDate) { const inp = $('#bsBody [data-f="date"]'); setTimeout(() => { if (inp) inp.focus(); }, 340); }
         sheet.oninput = (e) => { if (e.target.dataset.f === 'text') d.text = e.target.value; };
         sheet.onchange = (e) => {
           const f = e.target.dataset.f;
@@ -696,14 +824,12 @@
           const b = e.target.closest('[data-f]'); if (!b || ['INPUT', 'SELECT', 'TEXTAREA'].includes(b.tagName)) return;
           if (b.dataset.f === 'close') return closeSheet();
           if (b.dataset.f === 'save') {
-            const changed = d.date !== isoDay(o.follow), text = d.text.trim();
-            d.err = !changed && !text ? 'empty' : changed && !d.reason ? 'reason' : d.reason === 'Other' && !text ? 'text' : '';
+            const ch = d.date !== isoDay(o.follow), text = d.text.trim();
+            d.err = !ch && !text ? 'empty' : ch && !d.reason ? 'reason' : d.reason === 'Other' && !text ? 'text' : '';
             if (d.err) { draw(); return; }
-            if (text || changed) {
-              o.notesList.unshift({ author: ME, at: new Date(), text, reason: changed ? d.reason : '', newDate: changed ? fromIso(d.date) : null, fresh: true });
-              o.comm.notes.count++;
-              if (text) o.timeline.unshift({ type: 'note', title: 'Follow-Up Note added', text, at: new Date(), actor: ME, scope: 'Follow-Up', link: ['notes', 'View Notes'], fresh: true });
-            }
+            o.notesList.unshift({ author: ME, at: new Date(), text, reason: ch ? d.reason : '', newDate: ch ? fromIso(d.date) : null, fresh: true });
+            o.comm.notes.count++;
+            if (text) o.timeline.unshift({ type: 'note', title: 'Follow-Up Note added', text, at: new Date(), actor: ME, scope: 'Follow-Up', link: ['notes', 'View Notes'], fresh: true });
             d.reasonNote = text;
             const moved = applyDate(o, d, 'Follow-Up Notes');
             closeSheet(); renderAll();
@@ -716,16 +842,14 @@
 
   function openShare(o, type) {
     const q = type === 'tire' ? o.tq : o.aqd;
-    const ch = (k, label, sub) => { const st = o.comm[k].state; return `<button class="opt ${st === 'available' ? '' : 'disabled'}" data-f="via" data-v="${k}" ${st === 'available' ? '' : 'style="opacity:.55"'}><span class="sh-ic" style="width:36px;height:36px;border-radius:50%;background:var(--cyan-soft);display:grid;place-items:center">${ic(k).replace('<svg', '<svg style="width:17px;height:17px;fill:var(--cyan-600)"')}</span><div><b>${label}</b><small>${st === 'available' ? sub : FLY[k][st]}</small></div>${ic('chev', 'ic-chev')}</button>`; };
+    const ch = (k, label, sub) => { const st = o.comm[k].state; return `<button class="opt" data-f="via" data-v="${k}"><span class="mi-ic share-ic ${st}">${ic(k)}</span><div><b>${label}</b><small>${st === 'available' ? sub : FLY[k][st]}</small></div>${ic('chev', 'ic-chev')}</button>`; };
     openSheet({
       title: `Share ${type === 'tire' ? 'Tire' : 'Alignment'} Quote`,
-      body: `<div class="notice info">${ic('info')}<div><b>Quote ${q.id} · ${money(q.total)}</b>Sharing sends the Quote to the Vehicle Owner and marks it Shared on the Opportunity.</div></div>${ch('sms', 'Share by SMS', esc(o.phone))}${ch('email', 'Share by Email', esc(o.email))}`,
+      body: `<div class="notice info">${ic('info')}<div><b>Quote ${q.id} · ${money(q.total)}</b>The Quote is shared through the Vehicle Owner report link in an SMS or Email. Sending marks it Shared on the Opportunity.</div></div>${ch('sms', 'Share by SMS', esc(o.phone))}${ch('email', 'Share by Email', esc(o.email))}`,
       onMount: () => {
         sheet.onclick = (e) => {
           const b = e.target.closest('[data-f="via"]'); if (!b) return;
-          const k = b.dataset.v;
-          if (o.comm[k].state !== 'available') { closeSheet(); setTimeout(() => openUnavailable(o, k), 330); return; }
-          closeSheet(); setTimeout(() => openCompose(o, k, { quote: type }), 330);
+          closeSheet(); setTimeout(() => openComm(o, b.dataset.v, { quote: type }), 330);
         };
       }
     });
@@ -832,9 +956,10 @@
   function cardMenu(o) {
     menu(o.name || o.plate, [
       { icon: ic('chev', 'ic-chev'), label: 'Open Opportunity Detail', run: () => openOpp(o.id) },
-      { icon: ic('call'), label: 'Call', sub: o.comm.call.state === 'available' ? o.phone : cap(o.comm.call.state), run: () => openCall(o) },
-      { icon: ic('sms'), label: 'Send SMS', sub: o.comm.sms.state === 'available' ? '' : cap(o.comm.sms.state), run: () => openCompose(o, 'sms') },
-      { icon: ic('email'), label: 'Send Email', sub: o.comm.email.state === 'available' ? '' : cap(o.comm.email.state), run: () => openCompose(o, 'email') },
+      { icon: ic('call'), label: 'Call', sub: o.comm.call.state === 'available' ? o.phone : cap(o.comm.call.state), run: () => openComm(o, 'call') },
+      { icon: ic('sms'), label: 'Send SMS', sub: o.comm.sms.state === 'available' ? '' : cap(o.comm.sms.state), run: () => openComm(o, 'sms') },
+      { icon: ic('email'), label: 'Send Email', sub: o.comm.email.state === 'available' ? '' : cap(o.comm.email.state), run: () => openComm(o, 'email') },
+      { icon: ic('history'), label: 'Communication History', sub: 'SMS, Email, and Phone in Opportunity Detail', run: () => openOpp(o.id, 'comms') },
       { icon: ic('notes'), label: 'Follow-Up Notes', sub: plural(o.comm.notes.count, 'Note'), run: () => openNotes(o) },
       { icon: ic('cal'), label: 'Change Follow-Up Date', sub: due(o).long, run: () => openNotes(o, true) },
       { icon: ic('flag'), label: o.closed ? 'Reopen Follow-Up…' : 'Close Follow-Up…', cls: o.closed ? '' : 'danger', run: () => confirmClose(o) }
@@ -874,9 +999,10 @@
     'clear-search': () => { S.search = ''; $('#search').value = ''; renderList(); },
     sort: openSort, filter: openFilters, legend: openLegend,
     notifications: () => placeholder('Notifications'), profile: () => placeholder('Profile'), dealer: () => placeholder('Dealer selection'), scans: () => placeholder('Scan List'),
-    sms: (el) => openCompose(byId(idOf(el)), 'sms'),
-    email: (el) => openCompose(byId(idOf(el)), 'email'),
-    call: (el) => openCall(byId(idOf(el))),
+    sms: (el) => openComm(byId(idOf(el)), 'sms', { tab: el.dataset.tab }),
+    email: (el) => openComm(byId(idOf(el)), 'email', { tab: el.dataset.tab }),
+    call: (el) => openComm(byId(idOf(el)), 'call', { tab: el.dataset.tab }),
+    'comm-filter': (el) => { S.ui.commF = el.dataset.k; renderDetail(false); },
     notes: (el) => openNotes(byId(idOf(el))),
     date: (el) => openNotes(byId(idOf(el)), true),
     'card-menu': (el) => cardMenu(byId(idOf(el))),
@@ -894,7 +1020,7 @@
     'ro-chip': (el) => { const a = S.ui.ro, k = el.dataset.k, i = a.indexOf(k); i >= 0 ? a.splice(i, 1) : a.push(k); renderDetail(false); },
     'ro-mode': (el) => { S.ui.roAnd = el.dataset.v === '1'; renderDetail(false); },
     'edit-owner': () => placeholder('Edit Vehicle Owner'),
-    'close-sheet': closeSheet,
+    'close-sheet': () => requestClose(),
     'af-remove': (el) => {
       const [k, v] = el.dataset.k.split(':');
       if (k === 'opp' || k === 'owner') S.f[k] = S.f[k].filter((x) => x !== v);
@@ -917,6 +1043,8 @@
   };
 
   document.addEventListener('click', (e) => {
+    const more = e.target.closest('[data-more]');
+    if (more) { const h = more.closest('.hist'); const x = h.classList.toggle('expanded'); more.textContent = x ? 'Show less' : 'Show more'; return; }
     const a = e.target.closest('[data-act]');
     if (a) { if (a.disabled) return; const fn = ACT[a.dataset.act]; if (fn) { e.preventDefault(); fn(a, e); } return; }
     const card = e.target.closest('[data-open]');
@@ -927,7 +1055,7 @@
   $('#search').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   $('#detailScroll').addEventListener('scroll', onDetailScroll, { passive: true });
   $('#listScroll').addEventListener('scroll', () => { const tb = $('#listToolbar'); tb.classList.toggle('stuck', tb.getBoundingClientRect().top <= $('#listScroll').getBoundingClientRect().top + 1 && $('#listScroll').scrollTop > 0); }, { passive: true });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!$('#dialog').hidden) closeDialog(); else if (!sheet.hidden) closeSheet(); else if (parseHash().screen === 'detail' && !isSplit()) go('#/list'); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!$('#dialog').hidden) closeDialog(); else if (!sheet.hidden) requestClose(); else if (parseHash().screen === 'detail' && !isSplit()) go('#/list'); } });
 
   /* Press feedback like React Native TouchableOpacity — only the innermost touchable dims */
   document.addEventListener('pointerdown', (e) => {
@@ -942,7 +1070,7 @@
     let suppress = false;
     document.addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
-      if (e.target.closest('input, textarea, select, .switch, .bs-handle, .bs-head')) return;
+      if (e.target.closest('input, textarea, select, [contenteditable], .switch, .bs-handle, .bs-head')) return;
       const h = e.target.closest('.hscroll'), v = e.target.closest('.scroll, .bs-body');
       if (!h && !v) return;
       drag = { h, v, x: e.clientX, y: e.clientY, axis: null, sl: h ? h.scrollLeft : 0, st: v ? v.scrollTop : 0, moved: false };
