@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#E0F8FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>TraXtion ReCapture — Mobile App Mockup</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <!-- Icon set. Tire, bell, home, filter, mail and history glyphs come from the TraXtion mobile app. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-tire" viewBox="0 0 20 20"><path d="M10 0A10.01 10.01 0 000 10c.5 13.25 19.5 13.244 20 0A10.011 10.011 0 0010 0zm0 10.833a3.4 3.4 0 00-.704.084 3.062 3.062 0 00-.372-1.327 3 3 0 00.592-.302c.176-.124.338-.266.484-.425.294.327.663.575 1.076.725-.223.408-.35.862-.372 1.326a3.405 3.405 0 00-.704-.08zm5.024-3.782l-2.366.987a1.333 1.333 0 01-1.825-1.236V4.234a5.838 5.838 0 014.191 2.818zM9.167 4.233v2.57A1.333 1.333 0 017.346 8.04l-2.383-.97a5.833 5.833 0 014.204-2.838zM4.339 8.616l2.192.894a1.773 1.773 0 01.77 2.7l-1.456 1.873a5.833 5.833 0 01-1.506-5.467zm2.833 6.482l1.495-1.931a1.71 1.71 0 012.673.009l1.483 1.925a5.858 5.858 0 01-5.652-.004h.002zm6.98-1.006l-1.444-1.874a1.772 1.772 0 01.775-2.713l2.174-.91a5.834 5.834 0 01-1.506 5.497h.002z"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 16 20"><path d="M8 .833a6.25 6.25 0 00-6.25 6.25v4.875L.367 14.042a1.7 1.7 0 001.412 2.625h12.442a1.7 1.7 0 001.412-2.638l-1.383-2.07V7.082A6.25 6.25 0 008 .833zM8 19.167a2.5 2.5 0 002.354-1.667H5.646A2.5 2.5 0 008 19.167z"/></symbol>
+      <symbol id="i-home" viewBox="0 0 23 24"><path d="M11.5.5L0 10.722h2.556v11.5A1.278 1.278 0 003.833 23.5h1.278V13.278A1.278 1.278 0 016.39 12H16.61a1.277 1.277 0 011.278 1.278V23.5h1.278a1.277 1.277 0 001.277-1.278v-11.5H23L11.5.5z"/><path d="M6.389 14.555H16.61v1.278H6.39v-1.278zM6.389 17.11H16.61v1.279H6.39V17.11zM6.389 19.667H16.61v1.278H6.39v-1.278z"/></symbol>
+      <symbol id="i-filter" viewBox="0 0 28 26"><path d="M24.695 0H3.305A2.805 2.805 0 001.23 4.69l9.27 10.195V24.5a1 1 0 001.625.78L14 23.78l3.125-2.5a1.001 1.001 0 00.375-.78v-5.615L26.77 4.69A2.805 2.805 0 0024.695 0z"/></symbol>
+      <symbol id="i-email" viewBox="0 0 16 16"><path d="M8.463 10.021a.898.898 0 01-.472.132.898.898 0 01-.473-.132L0 5.431v6.102a2.362 2.362 0 002.361 2.36H13.64A2.362 2.362 0 0016 11.534V5.43l-7.537 4.59z"/><path d="M13.639 2.106H2.36A2.347 2.347 0 00.076 3.958l7.933 4.835 7.915-4.835a2.347 2.347 0 00-2.285-1.852z"/></symbol>
+      <symbol id="i-history" viewBox="0 0 20 20"><path d="M10.917.833a9.106 9.106 0 00-8.779 6.853l-.61-.923a.833.833 0 10-1.39.917l1.834 2.778a.903.903 0 00.528.354c.218.044.444 0 .63-.12l2.75-1.853a.833.833 0 10-.93-1.382L3.7 8.3a7.424 7.424 0 117.217 9.2 7.41 7.41 0 01-6.068-3.185.834.834 0 10-1.367.953A9.067 9.067 0 0020 10 9.136 9.136 0 0010.917.833z"/><path d="M10.833 4.958a.833.833 0 00-.833.834V10c.004.22.09.431.244.59l2.5 2.522a.844.844 0 001.178.005.833.833 0 00.005-1.178l-2.26-2.281V5.792a.833.833 0 00-.834-.834z"/></symbol>
+      <symbol id="i-sms" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M4 3h16a2 2 0 012 2v11a2 2 0 01-2 2h-8.6L6 22v-4H4a2 2 0 01-2-2V5a2 2 0 012-2zm3 4.4v1.7h10V7.4H7zm0 3.3v1.7h10v-1.7H7zm0 3.3v1.7h6.5V14H7z"/></symbol>
+      <symbol id="i-call" viewBox="0 0 24 24"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z"/></symbol>
+      <symbol id="i-notes" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6 2h8.6L20 7.4V20a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm2 9v1.7h8V11H8zm0 3.4v1.7h8v-1.7H8zm0 3.4v1.7h5.2v-1.7H8zM14 3.5V8h4.5L14 3.5z"/></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M7 2h2v2h6V2h2v2h2a2 2 0 012 2v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2V2zM5 9v10h14V9H5zm2 2.5h3v3H7v-3z"/></symbol>
+      <symbol id="i-back" viewBox="0 0 8 14"><path d="M7 13L1 7l6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-chev" viewBox="0 0 8 14"><path d="M1 13l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-down" viewBox="0 0 14 8"><path d="M1 1l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-close" viewBox="0 0 14 14"><path d="M13 1L1 13M1 1l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 015.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1110.5 3zm0 2a5.5 5.5 0 100 11 5.5 5.5 0 000-11z"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></symbol>
+      <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 3l4 4H8v10H6V7H3l4-4zm10 18l-4-4h3V7h2v10h3l-4 4z"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2a10 10 0 110 20 10 10 0 010-20zm-1 8v7h2v-7h-2zm0-3v2h2V7h-2z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 20 20"><path d="M15.167 7A.806.806 0 0014 7l-6.25 6.25-2.583-2.583a.805.805 0 00-1.167 0 .805.805 0 000 1.166L7.167 15c.166.167.333.25.583.25.25 0 .417-.083.583-.25l6.834-6.833a.806.806 0 000-1.167z"/></symbol>
+      <symbol id="i-person" viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><path d="M18 16.1a2.9 2.9 0 00-2 .8l-7.1-4.1a3.3 3.3 0 000-1.6L16 7.1A3 3 0 1015 5c0 .3 0 .5.1.8L8 9.9a3 3 0 100 4.3l7.1 4.1-.1.7a3 3 0 103-2.9z"/></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 3h10v4H7V3zM5 8h14a3 3 0 013 3v5h-4v4H6v-4H2v-5a3 3 0 013-3zm3 7v3h8v-3H8z"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 17.3V20h2.7l8-8L12 9.3l-8 8zM20.7 7a1 1 0 000-1.4L18.4 3.3a1 1 0 00-1.4 0L15.2 5.1l3.7 3.7L20.7 7z"/></symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24"><path d="M7 3H5a2 2 0 00-2 2v2h2V5h2V3zm12 0h-2v2h2v2h2V5a2 2 0 00-2-2zM5 17H3v2a2 2 0 002 2h2v-2H5v-2zm14 0v2h-2v2h2a2 2 0 002-2v-2h-2zM7 7h10v10H7V7z"/></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm2 5v2h8V7H8zm0 4v2h8v-2H8zm0 4v2h5v-2H8z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></symbol>
+      <symbol id="i-block" viewBox="0 0 20 20"><path d="M2.925 17.073A9.97 9.97 0 009.998 20a9.972 9.972 0 007.074-2.926c3.9-3.9 3.9-10.246 0-14.146-3.9-3.9-10.247-3.9-14.147 0-3.9 3.9-3.9 10.246 0 14.146zm13.183-2.732L5.658 3.891a7.489 7.489 0 014.34-1.39 7.48 7.48 0 015.306 2.194c2.623 2.623 2.886 6.718.804 9.646zM3.89 5.66l10.45 10.45c-2.928 2.082-7.023 1.82-9.646-.804C2.07 12.682 1.807 8.587 3.89 5.66z"/></symbol>
+      <symbol id="i-car" viewBox="0 0 24 24"><path d="M18.92 6.01A1.51 1.51 0 0017.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16A1.5 1.5 0 116.5 13a1.5 1.5 0 010 3zm11 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM5 11l1.5-4.5h11L19 11H5z"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 017 7c0 5-7 13-7 13S5 14 5 9a7 7 0 017-7zm0 4.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 3h2v18H5V3zm3 1h10l-2 4 2 4H8V4z"/></symbol>
+      <symbol id="i-align-bad" viewBox="0 0 64 72"><g fill="none" stroke="#69747d" stroke-width="4" stroke-linecap="round"><path d="M14 16h36M14 56h36M32 16v40"/></g><g fill="#ed1c24" stroke="#a7080e" stroke-width="1.5"><rect x="4" y="5" width="12" height="22" rx="3" transform="rotate(20 10 16)"/><rect x="48" y="5" width="12" height="22" rx="3" transform="rotate(-20 54 16)"/><rect x="4" y="45" width="12" height="22" rx="3" transform="rotate(-20 10 56)"/><rect x="48" y="45" width="12" height="22" rx="3" transform="rotate(20 54 56)"/></g></symbol>
+      <symbol id="i-align-ok" viewBox="0 0 64 72"><g fill="none" stroke="#69747d" stroke-width="4" stroke-linecap="round"><path d="M14 16h36M14 56h36M32 16v40"/></g><g fill="#43b02a" stroke="#23840f" stroke-width="1.5"><rect x="4" y="5" width="12" height="22" rx="3"/><rect x="48" y="5" width="12" height="22" rx="3"/><rect x="4" y="45" width="12" height="22" rx="3"/><rect x="48" y="45" width="12" height="22" rx="3"/></g></symbol>
+    </defs>
+  </svg>
+
+  <div id="app" class="app">
+    <!-- ============ FOLLOW-UP LIST ============ -->
+    <section id="listScreen" class="screen list-screen" aria-label="Follow-Up List">
+      <header class="app-header">
+        <img class="logo" src="assets/img/traxtion-logo.png" alt="TraXtion">
+        <div class="header-actions">
+          <button class="icon-btn tap" data-act="notifications" aria-label="Notifications"><svg class="ic-bell"><use href="#i-bell"/></svg><span class="badge">3</span></button>
+          <button class="icon-btn avatar tap" data-act="profile" aria-label="Profile">C</button>
+        </div>
+      </header>
+      <div class="sheet">
+        <div class="scroll" id="listScroll">
+          <button class="card dealer-card tap" data-act="dealer"><svg class="ic-home"><use href="#i-home"/></svg><span>TraXtion Sales Demo</span><svg class="ic-chev"><use href="#i-chev"/></svg></button>
+          <div class="module-switch" role="tablist" aria-label="App modules">
+            <button class="tap" role="tab" data-act="scans">Scans</button>
+            <button class="active" role="tab" aria-selected="true">ReCapture <span class="ms-badge" id="moduleBadge"></span></button>
+          </div>
+          <div class="list-title">
+            <div><h1>Follow-Up List</h1><span id="resultCount" class="result-count"></span></div>
+            <button class="link-btn tap" data-act="legend"><svg><use href="#i-info"/></svg>Icon legend</button>
+          </div>
+          <div class="list-toolbar" id="listToolbar">
+            <div class="search-row">
+              <label class="search-field"><svg><use href="#i-search"/></svg><input id="search" type="search" autocomplete="off" placeholder="Vehicle Owner, VIN, Plate, Vehicle…" aria-label="Search"><button class="clear-search tap" data-act="clear-search" aria-label="Clear search" hidden><svg><use href="#i-close"/></svg></button></label>
+              <button class="square-btn tap" data-act="sort" aria-label="Sort"><svg><use href="#i-sort"/></svg></button>
+            </div>
+            <div class="chips hscroll" id="quickChips" role="tablist" aria-label="Quick views"></div>
+          </div>
+          <div id="activeFilters" class="active-filters"></div>
+          <div id="cards" class="cards" aria-live="polite"></div>
+          <div id="listEnd" class="list-end"></div>
+        </div>
+        <button class="fab tap" data-act="filter" aria-label="Filters"><svg><use href="#i-filter"/></svg><span class="fab-badge" id="filterBadge" hidden></span></button>
+      </div>
+    </section>
+
+    <!-- ============ OPPORTUNITY DETAIL ============ -->
+    <section id="detailScreen" class="screen detail-screen" aria-label="Opportunity Detail">
+      <header class="app-header detail-header">
+        <button class="icon-btn back-btn tap" data-act="back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+        <h2 class="header-title">Opportunity Detail</h2>
+        <button class="icon-btn tap" data-act="detail-menu" aria-label="More actions" id="detailMenuBtn"><svg><use href="#i-more"/></svg></button>
+      </header>
+      <div class="sheet detail-sheet">
+        <div class="scroll" id="detailScroll"><div id="detailContent"></div></div>
+        <nav class="action-bar" id="actionBar" aria-label="Primary actions"></nav>
+      </div>
+    </section>
+  </div>
+
+  <div id="overlay" class="overlay" hidden></div>
+  <div id="bsheet" class="bsheet" role="dialog" aria-modal="true" hidden>
+    <div class="bs-handle" aria-hidden="true"></div>
+    <div class="bs-head"><h3 id="bsTitle"></h3><button class="icon-plain tap" data-act="close-sheet" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <div class="bs-body" id="bsBody"></div>
+    <div class="bs-foot" id="bsFoot"></div>
+  </div>
+  <div id="dialog" class="dialog" role="alertdialog" aria-modal="true" hidden></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
